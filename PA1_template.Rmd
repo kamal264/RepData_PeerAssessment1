@@ -1,25 +1,38 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+**Rep_Data Peer Assesment 1**
+==========================
+*Kamal*
 
 
-## Loading and preprocessing the data
+Here is the Code to Load the data
+```{r loaddata}
+library(plyr)
+dat <- read.table("./data/activity.csv",sep=",",header = T)
+##fileter out the NA values
+udat <- dat[!is.na(dat$steps),]
+##Sumation of steps
+## need plyr package
 
+dat1 <-  ddply(udat,.(date),summarize, steps =sum(steps))
 
+```
 
-## What is mean total number of steps taken per day?
+What is mean total number of steps taken per day?
+```{r meanplot}
 
+#histogram ploting
+plot(dat1$steps, dat1$date, type = "h",xlab ="Steps", ylab="Date")
 
+## Mean and Maidan
+mean <-  ddply(udat,.(date),summarize, mean_steps =mean(steps))
+median <-  ddply(udat,.(date),summarize, median_steps =median(steps))
+merge(mean, median)
 
-## What is the average daily activity pattern?
+```
+What is the average daily activity pattern?
+```{r interval}
 
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+dat2 <- udat[udat$interval ==5 ,]
+plot(dat2$steps, dat2$date, type = "l", xlab ="Steps", ylab="Date")
+max <- dat2[dat2$steps == max(dat2$steps),]
+```
+Maximum number of steps are `r max$steps` and date is `r max$date`.
