@@ -1,9 +1,14 @@
+---
+output: word_document
+---
 **Rep_Data Peer Assesment 1**
 ==========================
 *Kamal*
 
 
 Here is the Code to Load the data
+
+
 ```{r loaddata}
 library(plyr)
 dat <- read.table("./data/activity.csv",sep=",",header = T)
@@ -36,3 +41,21 @@ plot(dat2$steps, dat2$date, type = "l", xlab ="Steps", ylab="Date")
 max <- dat2[dat2$steps == max(dat2$steps),]
 ```
 Maximum number of steps are `r max$steps` and date is `r max$date`.
+
+
+Imputing missing values
+```{r misisng}
+NAs <- sum(is.na(dat$steps))
+fdata <- merge(dat,mean)
+#data without NA
+fdata$steps <- ifelse(is.na(fdata$steps),fdata$mean_steps,fdata$steps)
+
+#histogram ploting
+plot(fdata$steps, fdata$date, type = "h",xlab ="Steps", ylab="Date")
+
+## Mean and Maidan
+mean <-  ddply(fdata,.(date),summarize, mean_steps =mean(steps))
+median <-  ddply(fdata,.(date),summarize, median_steps =median(steps))
+merge(mean, median)
+
+```
