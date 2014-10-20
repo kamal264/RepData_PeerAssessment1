@@ -1,5 +1,5 @@
 ---
-output: word_document
+output: html_document
 ---
 **Rep_Data Peer Assesment 1**
 ==========================
@@ -11,177 +11,130 @@ Here is the Code to Load the data
 
 
 ```r
-library(plyr)
-dat <- read.table("./data/activity.csv",sep=",",header = T)
-##fileter out the NA values
-udat <- dat[!is.na(dat$steps),]
-##Sumation of steps
-## need plyr package
-
-dat1 <-  ddply(udat,.(date),summarize, steps =sum(steps))
+activity <- read.table("./data/activity.csv",sep=",",header = T)
+### We can ignore the missing values
+c_activity <- activity[complete.cases(activity),]
 ```
 
 What is mean total number of steps taken per day?
 
 ```r
-#histogram ploting
-plot(dat1$steps, dat1$date, type = "h",xlab ="Steps", ylab="Date")
+##aggregate of daily steps
+d_steps <- aggregate(steps~date,data=c_activity, sum)
+
+##Create a histogram of the total number of steps taken each day
+hist(d_steps$steps, col = "blue", main = "Steps per Day",xlab ="Daily Steps")
 ```
 
 ![plot of chunk meanplot](figure/meanplot.png) 
 
 ```r
 ## Mean and Maidan
-mean <-  ddply(udat,.(date),summarize, mean_steps =mean(steps))
-median <-  ddply(udat,.(date),summarize, median_steps =median(steps))
-merge(mean, median)
+meansteps<-as.integer(mean(d_steps$steps))
+mediansteps<-median(d_steps$steps)
 ```
+The mean total of steps per day is 10766. The median total of steps per day is 10765.
 
-```
-##          date mean_steps median_steps
-## 1  2012-10-02     0.4375            0
-## 2  2012-10-03    39.4167            0
-## 3  2012-10-04    42.0694            0
-## 4  2012-10-05    46.1597            0
-## 5  2012-10-06    53.5417            0
-## 6  2012-10-07    38.2465            0
-## 7  2012-10-09    44.4826            0
-## 8  2012-10-10    34.3750            0
-## 9  2012-10-11    35.7778            0
-## 10 2012-10-12    60.3542            0
-## 11 2012-10-13    43.1458            0
-## 12 2012-10-14    52.4236            0
-## 13 2012-10-15    35.2049            0
-## 14 2012-10-16    52.3750            0
-## 15 2012-10-17    46.7083            0
-## 16 2012-10-18    34.9167            0
-## 17 2012-10-19    41.0729            0
-## 18 2012-10-20    36.0938            0
-## 19 2012-10-21    30.6285            0
-## 20 2012-10-22    46.7361            0
-## 21 2012-10-23    30.9653            0
-## 22 2012-10-24    29.0104            0
-## 23 2012-10-25     8.6528            0
-## 24 2012-10-26    23.5347            0
-## 25 2012-10-27    35.1354            0
-## 26 2012-10-28    39.7847            0
-## 27 2012-10-29    17.4236            0
-## 28 2012-10-30    34.0938            0
-## 29 2012-10-31    53.5208            0
-## 30 2012-11-02    36.8056            0
-## 31 2012-11-03    36.7049            0
-## 32 2012-11-05    36.2465            0
-## 33 2012-11-06    28.9375            0
-## 34 2012-11-07    44.7326            0
-## 35 2012-11-08    11.1771            0
-## 36 2012-11-11    43.7778            0
-## 37 2012-11-12    37.3785            0
-## 38 2012-11-13    25.4722            0
-## 39 2012-11-15     0.1424            0
-## 40 2012-11-16    18.8924            0
-## 41 2012-11-17    49.7882            0
-## 42 2012-11-18    52.4653            0
-## 43 2012-11-19    30.6979            0
-## 44 2012-11-20    15.5278            0
-## 45 2012-11-21    44.3993            0
-## 46 2012-11-22    70.9271            0
-## 47 2012-11-23    73.5903            0
-## 48 2012-11-24    50.2708            0
-## 49 2012-11-25    41.0903            0
-## 50 2012-11-26    38.7569            0
-## 51 2012-11-27    47.3819            0
-## 52 2012-11-28    35.3576            0
-## 53 2012-11-29    24.4688            0
-```
+
 What is the average daily activity pattern?
 
 ```r
-dat2 <- udat[udat$interval ==5 ,]
-plot(dat2$steps, dat2$date, type = "l", xlab ="Steps", ylab="Date")
+#i_steps <- aggregate(steps~interval,data=c_activity, mean)
+i_steps <- aggregate(c_activity$steps,list(interval = c_activity$interval),mean)
+
+plot (i_steps$interval,
+      i_steps$x,
+      ylab ="Steps", 
+      xlab ="5 Min Intervals", 
+      type="l")
 ```
 
 ![plot of chunk interval](figure/interval.png) 
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 ```r
-max <- dat2[dat2$steps == max(dat2$steps),]
+max<-i_steps[
+  (i_steps$steps==max(i_steps$steps))  ## row that has the max value
+  ,]  ## Return the Interval
 ```
-Maximum number of steps are 18 and date is 2012-10-10.
+
+```
+## Warning: no non-missing arguments to max; returning -Inf
+```
+Maximum number of steps are  and date is .
 
 
 Imputing missing values
 
 ```r
-NAs <- sum(is.na(dat$steps))
-fdata <- merge(dat,mean)
-#data without NA
-fdata$steps <- ifelse(is.na(fdata$steps),fdata$mean_steps,fdata$steps)
+NAs <- sum(is.na(activity$steps))
+NAs
+```
 
-#histogram ploting
-plot(fdata$steps, fdata$date, type = "h",xlab ="Steps", ylab="Date")
+```
+## [1] 2304
+```
+
+```r
+#data without NA
+## Merging with Interval data to get mean of 5 intervals
+nonNA_activity <- merge(activity,i_steps)
+
+##Replacing the NAs with corresponding 5minutes interval Steps Mean value 
+nonNA_activity$steps <- ifelse(is.na(nonNA_activity$steps),nonNA_activity$x
+                               ,nonNA_activity$steps)
+
+
+fd_steps <- aggregate(steps~date,data=nonNA_activity, sum)
+hist(fd_steps$steps, col = "blue", main = "Steps per Day with No NA ",xlab ="Daily Steps")
 ```
 
 ![plot of chunk misisng](figure/misisng.png) 
 
 ```r
-## Mean and Maidan
-mean <-  ddply(fdata,.(date),summarize, mean_steps =mean(steps))
-median <-  ddply(fdata,.(date),summarize, median_steps =median(steps))
-merge(mean, median)
+#Calculate the Mean and Median of the new datatset.
+
+meansteps<-as.integer(mean(fd_steps$steps))
+mediansteps<-as.integer(median(fd_steps$steps))
+```
+The mean total of steps per day is 10766. The median total of steps per day is 10766. 
+
+
+Are there differences in activity patterns between weekdays and weekends?
+Compare weekend vs weekday data. Are there any differences?
+
+
+
+```r
+nonNA_activity$day <- ifelse( weekdays(as.Date(nonNA_activity$date)) %in% c("Saturday","Sunday"),"weekend","weekday")
+
+weekend_df <- nonNA_activity[
+  (nonNA_activity$day == "weekend"),
+  ]
+
+weekday_df <- nonNA_activity[
+  (nonNA_activity$day == "weekday"),
+  ]
+
+i_steps_we <- aggregate(weekend_df$steps,list(interval = weekend_df$interval), mean)
+i_steps_wd <- aggregate(weekday_df$steps,list(interval = weekday_df$interval), mean)
+#Now plot weekend and weekday activity patterns.
+
+par(mfcol = c(2,1))
+
+plot (i_steps_we$interval,
+      i_steps_we$x,
+      ylab ="Steps", 
+      xlab ="5 Min Intervals",
+      main = "Weekend Average Steps",
+      type="l")
+
+plot (i_steps_wd$interval,
+      i_steps_wd$x,
+      ylab ="Steps", 
+      xlab ="5 Min Intervals",
+      main = "Weekday Average Steps",
+      type="l")
 ```
 
-```
-##          date mean_steps median_steps
-## 1  2012-10-02     0.4375            0
-## 2  2012-10-03    39.4167            0
-## 3  2012-10-04    42.0694            0
-## 4  2012-10-05    46.1597            0
-## 5  2012-10-06    53.5417            0
-## 6  2012-10-07    38.2465            0
-## 7  2012-10-09    44.4826            0
-## 8  2012-10-10    34.3750            0
-## 9  2012-10-11    35.7778            0
-## 10 2012-10-12    60.3542            0
-## 11 2012-10-13    43.1458            0
-## 12 2012-10-14    52.4236            0
-## 13 2012-10-15    35.2049            0
-## 14 2012-10-16    52.3750            0
-## 15 2012-10-17    46.7083            0
-## 16 2012-10-18    34.9167            0
-## 17 2012-10-19    41.0729            0
-## 18 2012-10-20    36.0938            0
-## 19 2012-10-21    30.6285            0
-## 20 2012-10-22    46.7361            0
-## 21 2012-10-23    30.9653            0
-## 22 2012-10-24    29.0104            0
-## 23 2012-10-25     8.6528            0
-## 24 2012-10-26    23.5347            0
-## 25 2012-10-27    35.1354            0
-## 26 2012-10-28    39.7847            0
-## 27 2012-10-29    17.4236            0
-## 28 2012-10-30    34.0938            0
-## 29 2012-10-31    53.5208            0
-## 30 2012-11-02    36.8056            0
-## 31 2012-11-03    36.7049            0
-## 32 2012-11-05    36.2465            0
-## 33 2012-11-06    28.9375            0
-## 34 2012-11-07    44.7326            0
-## 35 2012-11-08    11.1771            0
-## 36 2012-11-11    43.7778            0
-## 37 2012-11-12    37.3785            0
-## 38 2012-11-13    25.4722            0
-## 39 2012-11-15     0.1424            0
-## 40 2012-11-16    18.8924            0
-## 41 2012-11-17    49.7882            0
-## 42 2012-11-18    52.4653            0
-## 43 2012-11-19    30.6979            0
-## 44 2012-11-20    15.5278            0
-## 45 2012-11-21    44.3993            0
-## 46 2012-11-22    70.9271            0
-## 47 2012-11-23    73.5903            0
-## 48 2012-11-24    50.2708            0
-## 49 2012-11-25    41.0903            0
-## 50 2012-11-26    38.7569            0
-## 51 2012-11-27    47.3819            0
-## 52 2012-11-28    35.3576            0
-## 53 2012-11-29    24.4688            0
-```
+![plot of chunk weekdays](figure/weekdays.png) 

@@ -10,52 +10,110 @@ Here is the Code to Load the data
 
 
 ```{r loaddata}
-library(plyr)
-dat <- read.table("./data/activity.csv",sep=",",header = T)
-##fileter out the NA values
-udat <- dat[!is.na(dat$steps),]
-##Sumation of steps
-## need plyr package
+activity <- read.table("./data/activity.csv",sep=",",header = T)
+### We can ignore the missing values
+c_activity <- activity[complete.cases(activity),]
 
-dat1 <-  ddply(udat,.(date),summarize, steps =sum(steps))
 
 ```
 
 What is mean total number of steps taken per day?
 ```{r meanplot}
+##aggregate of daily steps
+d_steps <- aggregate(steps~date,data=c_activity, sum)
 
-#histogram ploting
-plot(dat1$steps, dat1$date, type = "h",xlab ="Steps", ylab="Date")
+##Create a histogram of the total number of steps taken each day
+hist(d_steps$steps, col = "blue", main = "Steps per Day",xlab ="Daily Steps")
 
 ## Mean and Maidan
-mean <-  ddply(udat,.(date),summarize, mean_steps =mean(steps))
-median <-  ddply(udat,.(date),summarize, median_steps =median(steps))
-merge(mean, median)
+meansteps<-as.integer(mean(d_steps$steps))
+mediansteps<-median(d_steps$steps)
 
 ```
+The mean total of steps per day is `r meansteps`. The median total of steps per day is `r mediansteps`.
+
+
 What is the average daily activity pattern?
 ```{r interval}
 
-dat2 <- udat[udat$interval ==5 ,]
-plot(dat2$steps, dat2$date, type = "l", xlab ="Steps", ylab="Date")
-max <- dat2[dat2$steps == max(dat2$steps),]
+#i_steps <- aggregate(steps~interval,data=c_activity, mean)
+i_steps <- aggregate(c_activity$steps,list(interval = c_activity$interval),mean)
+
+plot (i_steps$interval,
+      i_steps$x,
+      ylab ="Steps", 
+      xlab ="5 Min Intervals", 
+      type="l")
+
+
+```
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r max}
+max<-i_steps[
+  (i_steps$steps==max(i_steps$steps))  ## row that has the max value
+  ,]  ## Return the Interval
+
 ```
 Maximum number of steps are `r max$steps` and date is `r max$date`.
 
 
 Imputing missing values
 ```{r misisng}
-NAs <- sum(is.na(dat$steps))
-fdata <- merge(dat,mean)
+NAs <- sum(is.na(activity$steps))
+NAs
 #data without NA
-fdata$steps <- ifelse(is.na(fdata$steps),fdata$mean_steps,fdata$steps)
+## Merging with Interval data to get mean of 5 intervals
+nonNA_activity <- merge(activity,i_steps)
 
-#histogram ploting
-plot(fdata$steps, fdata$date, type = "h",xlab ="Steps", ylab="Date")
+##Replacing the NAs with corresponding 5minutes interval Steps Mean value 
+nonNA_activity$steps <- ifelse(is.na(nonNA_activity$steps),nonNA_activity$x
+                               ,nonNA_activity$steps)
 
-## Mean and Maidan
-mean <-  ddply(fdata,.(date),summarize, mean_steps =mean(steps))
-median <-  ddply(fdata,.(date),summarize, median_steps =median(steps))
-merge(mean, median)
 
+fd_steps <- aggregate(steps~date,data=nonNA_activity, sum)
+hist(fd_steps$steps, col = "blue", main = "Steps per Day with No NA ",xlab ="Daily Steps")
+
+
+#Calculate the Mean and Median of the new datatset.
+
+meansteps<-as.integer(mean(fd_steps$steps))
+mediansteps<-as.integer(median(fd_steps$steps))
+```
+The mean total of steps per day is `r meansteps`. The median total of steps per day is `r mediansteps`. 
+
+
+Are there differences in activity patterns between weekdays and weekends?
+Compare weekend vs weekday data. Are there any differences?
+
+
+```{r weekdays}
+nonNA_activity$day <- ifelse( weekdays(as.Date(nonNA_activity$date)) %in% c("Saturday","Sunday"),"weekend","weekday")
+
+weekend_df <- nonNA_activity[
+  (nonNA_activity$day == "weekend"),
+  ]
+
+weekday_df <- nonNA_activity[
+  (nonNA_activity$day == "weekday"),
+  ]
+
+i_steps_we <- aggregate(weekend_df$steps,list(interval = weekend_df$interval), mean)
+i_steps_wd <- aggregate(weekday_df$steps,list(interval = weekday_df$interval), mean)
+#Now plot weekend and weekday activity patterns.
+
+par(mfcol = c(2,1))
+
+plot (i_steps_we$interval,
+      i_steps_we$x,
+      ylab ="Steps", 
+      xlab ="5 Min Intervals",
+      main = "Weekend Average Steps",
+      type="l")
+
+plot (i_steps_wd$interval,
+      i_steps_wd$x,
+      ylab ="Steps", 
+      xlab ="5 Min Intervals",
+      main = "Weekday Average Steps",
+      type="l")
 ```
